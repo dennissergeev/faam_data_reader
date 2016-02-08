@@ -66,20 +66,20 @@ def read_ds_nc(fname, flds=None, time2datetime=False):
     Kwargs:
     -------
         flds: dict, names of variables to read from a dropsonde data file
-              The default value is 
+              The default value is
               dict(time='time',hgt='alt',lon='lon',lat='lat',
                    u='u_wind',v='v_wind',wspd='wspd',wdir='wdir',
                    pres='pres',tdry='tdry',thta='theta',dhgt='dz',
                    tdew='dp',relh='rh',mixr='mr',thte='theta_e',thtv='theta_v')
-        time2datetime: boolean, optional. 
+        time2datetime: boolean, optional.
                        If True and `flds` dictionary contains 'time' key, convert array of
-                       time values to `datetime.datetime` objects. 
+                       time values to `datetime.datetime` objects.
                        Requires `var_utils.timestr2datetime()` to parse time units.
                        Defaults to False.
     Returns:
     --------
-        data: `ObsData` instance 
-     
+        data: `ObsData` instance
+
     """
 
     if flds == None:
@@ -94,7 +94,7 @@ def read_ds_nc(fname, flds=None, time2datetime=False):
     for i in flds:
         ncfld = f.variables[flds[i]]
         dum(**{i:DsFld(raw=ncfld[:],units=ncfld.units,long_name=ncfld.long_name)})
-    
+
     flds_list = [ii for ii in flds] # to keep the order
     fil_list = var.filt_miss_row(*[getattr(dum,ii).raw for ii in flds_list])
 
@@ -104,13 +104,13 @@ def read_ds_nc(fname, flds=None, time2datetime=False):
                                    fil=j,\
                                    units=getattr(dum,flds_list[i]).units,\
                                    long_name=getattr(dum,flds_list[i]).long_name)})
-    
+
     if time2datetime and 'time' in flds:
         if hasattr(data.time, 'units'):
             tbase, tstep_sec = var.timestr2datetime(data.time.units)
-            arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=x*tstep_sec))                       
+            arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=x*tstep_sec))
             data.time.fil = arr_sec2datetime(data.time.fil)
-    
+
     return data
 
 
@@ -125,29 +125,29 @@ def read_faam_nc(fname, flds=None, time2datetime=False, calc_wspd=True, calc_wdi
     Kwargs:
     -------
         flds: dict, names of variables to read from a dropsonde data file
-              The default value is 
+              The default value is
               dict(time='time',hgt='alt',lon='lon',lat='lat',
                    u='u_wind',v='v_wind',wspd='wspd',wdir='wdir',
                    pres='pres',tdry='tdry',thta='theta',dhgt='dz',
                    tdew='dp',relh='rh',mixr='mr',thte='theta_e',thtv='theta_v')
-        time2datetime: boolean, optional. 
+        time2datetime: boolean, optional.
                        If True and `flds` dictionary contains 'time' key, convert array of
-                       time values to `datetime.datetime` objects. 
+                       time values to `datetime.datetime` objects.
                        Requires `var_utils.timestr2datetime()` to parse time units.
                        Defaults to False.
-        calc_wspd: boolean, optional. 
-                   If True and `flds` dictionary contains 'u' and 'v' keys, 
+        calc_wspd: boolean, optional.
+                   If True and `flds` dictionary contains 'u' and 'v' keys,
                    add calculate wind speed and add it to the `ObsData` instance.
                    Requires `var_utils.uv2wspd`. Defaults to True.
-        calc_wdir: boolean, optional. 
-                   If True and `flds` dictionary contains 'u' and 'v' keys, 
+        calc_wdir: boolean, optional.
+                   If True and `flds` dictionary contains 'u' and 'v' keys,
                    add calculate wind direction (degrees from North) and add it to the `ObsData` instance.
                    Requires `var_utils.uv2wdir`. Defaults to True.
 
     Returns:
     --------
-        data: `ObsData` instance 
-     
+        data: `ObsData` instance
+
     """
 
     if flds == None:
@@ -175,19 +175,19 @@ def read_faam_nc(fname, flds=None, time2datetime=False, calc_wspd=True, calc_wdi
             data.wspd = FaamFld(var.uv2wspd(data.u.val,data.v.val),data.u.units,'wind speed derived from aircraft instruments and GIN')
         if calc_wdir:
             data.wdir = FaamFld(var.uv2wdir(data.u.val,data.v.val),'deg','wind direction')
-        
+
     if time2datetime and 'time' in flds:
         if hasattr(data.time, 'units'):
             tbase, tstep_sec = var.timestr2datetime(data.time.units)
             arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=int(x)*tstep_sec))
             data.time.val = arr_sec2datetime(data.time.val)
-            
+
     return data
 
 
 def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
     """Read 2DS data from a HDF5 file. Requires `h5py` package.
-    
+
     Sum data from all channels and convert densities to [kg m :sup:`-3`].
 
     Args:
@@ -196,8 +196,8 @@ def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2date
     Kwargs:
     -------
         tbase: datetime.datetime, time start. Defaults to datetime.datetime(2013, 3, 26, 0, 0, 0).
-        time2datetime: boolean, optional. 
-                       If True, convert time array to `datetime.datetime` objects 
+        time2datetime: boolean, optional.
+                       If True, convert time array to `datetime.datetime` objects
                        adding time values to `tbase` kwarg.
                        Defaults to True.
     Returns:
@@ -206,39 +206,39 @@ def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2date
         fwc: frozen water content density [kg m :sup:`-3`]
         lwc: liquid water content density [kg m :sup:`-3`]
         other: small particles density [kg m :sup:`-3`]
-     
+
     """
 
     import h5py
-    
+
     ds2 = h5py.File(fname)
     time = [ds2[i] for i in ds2.keys() if 'time' in i.lower()][0]
     if time2datetime:
         time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
     else:
         time = time.value
-    
+
     fwc = np.nansum([ds2[i] for i in ds2.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
     lwc = np.nansum([ds2[i] for i in ds2.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
     other = fwc = np.nansum([ds2[i] for i in ds2.keys() if 'S_MD' in i][0].value,1)  # small particles density
-    
+
     fwc, lwc, other = [i*1e-3 for i in (fwc, lwc, other)] # Convert to kg m-3
-    
+
     return time, fwc, lwc, other
-    
+
 def read_faam_cdp_nc(fname, time2datetime=True, use='xray'):
     """Read core FAAM **cloud** data from a NetCDF file. Requires `xray` package.
-    
+
     Args:
     -----
         fname: str, file name
     Kwargs:
     -------
-        time2datetime: boolean, optional. 
-                       If True, convert time array to `datetime.datetime` objects. 
+        time2datetime: boolean, optional.
+                       If True, convert time array to `datetime.datetime` objects.
                        Defaults to True.
         use: str, optional
-             Defaults to 'xray'. 
+             Defaults to 'xray'.
     Returns:
     --------
         cdp_lwc_dens: liquid water content density [kg m :sup:`-3`]
@@ -252,20 +252,20 @@ def read_faam_cdp_nc(fname, time2datetime=True, use='xray'):
         cdp_time = cdp.Time.values
         if time2datetime:
             cdp_time = cdp_time.astype('<M8[us]').astype(datetime.datetime) # Time as datetime objects
-        
+
         ch_lims = np.vstack((cdp.CDP_D_L_NOM.values, cdp.CDP_D_U_NOM.values)) # Particle diameter lower and upper limits for each channel
         ch_mean_diam = np.mean(ch_lims,1) # Mean diameter for each channel
         ch_mean_vol = 4./3*np.pi*(0.5*ch_mean_diam)**3 # Mean volume for each channel
-        
+
         h2o_d=999.97*1e3/(1e6)**3 # Water density in (g um-3)
         # Test (requires iris package):
         # a = iris.unit.Unit('kg m-3')
         # b = iris.unit.Unit('g um-3')
         # a.convert(999.97, b)
         # >>> 1e-12
-        
+
         ch_mean_mass = ch_mean_vol*h2o_d # Mean mass for each channel
-        
+
         cdp_lwc_dens_all_ch = []
         for ich, mass in enumerate(ch_mean_mass):
             cdp_conc = cdp['CDP_{0:02d}'.format(ich+1)].values # droplet conc. in channel ich
@@ -274,7 +274,7 @@ def read_faam_cdp_nc(fname, time2datetime=True, use='xray'):
         cdp_lwc_dens = sum(np.array(cdp_lwc_dens_all_ch))
     else:
         raise NotImplementedError('Only xray interface works now')
-            
+
     return cdp_lwc_dens, cdp_time
 
 
@@ -285,12 +285,13 @@ def parse_profiles_runs_info(text_file_name, daystr='', timesorted=True):
        Args:
        -----
            test_file_name: str, file name
-    
+
        Kwargs:
        -------
            daystr: str, in format '%Y%m%d' date of observations, e.g. 20130326.
                    Defaults to an empty string.
-       
+           timesorted: bool, if True, sorts the tuples time-wise
+
        Returns:
        --------
            list of tuples like (name, start_time, finish_time)
