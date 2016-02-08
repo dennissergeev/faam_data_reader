@@ -68,13 +68,13 @@ def read_core_nc(fname, flds=None, time2datetime=False, calc_wspd=True, calc_wdi
 
     if hasattr(data,'u') and hasattr(data,'v'):
         if calc_wspd:
-            data.wspd = FaamFld(var.uv2wspd(data.u.val,data.v.val),data.u.units,'wind speed derived from aircraft instruments and GIN')
+            data.wspd = FaamFld(utils.uv2wspd(data.u.val,data.v.val),data.u.units,'wind speed derived from aircraft instruments and GIN')
         if calc_wdir:
-            data.wdir = FaamFld(var.uv2wdir(data.u.val,data.v.val),'deg','wind direction')
+            data.wdir = FaamFld(utils.uv2wdir(data.u.val,data.v.val),'deg','wind direction')
 
     if time2datetime and 'time' in flds:
         if hasattr(data.time, 'units'):
-            tbase, tstep_sec = var.timestr2datetime(data.time.units)
+            tbase, tstep_sec = utils.timestr2datetime(data.time.units)
             arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=int(x)*tstep_sec))
             data.time.val = arr_sec2datetime(data.time.val)
 

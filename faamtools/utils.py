@@ -56,7 +56,7 @@ def filt_miss_row(*argin, **kwargs):
             raise NameError('Vectors must the same length')
 
         work = np.array(argin).T
-        if kwargs.has_key('miss_val'):
+        if 'miss_val' in kwargs:
             return list(work[np.all(work != kwargs['miss_val'], axis=1)].T) 
         else:
             if hasattr(argin[0],'fill_value'):
