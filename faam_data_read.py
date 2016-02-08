@@ -10,6 +10,7 @@ import netCDF4 as nc
 import numpy as np
 
 import var_utils as var
+import phys_meteo as met
 
 class ObsData:
     """Generic class for storing several fields of observational data.
@@ -178,7 +179,7 @@ def read_faam_nc(fname, flds=None, time2datetime=False, calc_wspd=True, calc_wdi
     if time2datetime and 'time' in flds:
         if hasattr(data.time, 'units'):
             tbase, tstep_sec = var.timestr2datetime(data.time.units)
-            arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=x*tstep_sec))
+            arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=int(x)*tstep_sec))
             data.time.val = arr_sec2datetime(data.time.val)
             
     return data
@@ -252,7 +253,7 @@ def read_faam_cdp_nc(fname, time2datetime=True, use='xray'):
         if time2datetime:
             cdp_time = cdp_time.astype('<M8[us]').astype(datetime.datetime) # Time as datetime objects
         
-        ch_lims = zip(cdp.CDP_D_L_NOM.values, cdp.CDP_D_U_NOM.values) # Particle diameter lower and upper limits for each channel
+        ch_lims = np.vstack((cdp.CDP_D_L_NOM.values, cdp.CDP_D_U_NOM.values)) # Particle diameter lower and upper limits for each channel
         ch_mean_diam = np.mean(ch_lims,1) # Mean diameter for each channel
         ch_mean_vol = 4./3*np.pi*(0.5*ch_mean_diam)**3 # Mean volume for each channel
         
@@ -277,7 +278,7 @@ def read_faam_cdp_nc(fname, time2datetime=True, use='xray'):
     return cdp_lwc_dens, cdp_time
 
 
-def parse_profiles_runs_info(text_file_name, daystr=''):
+def parse_profiles_runs_info(text_file_name, daystr='', timesorted=True):
     """Parse text file containing flight profiles and runs times
        a.k.a. FAAM sawtooth summary.
 
@@ -311,4 +312,9 @@ def parse_profiles_runs_info(text_file_name, daystr=''):
     fl_runs_i = [n for n, l in enumerate(profiles_and_runs) if l.startswith('run')]
     fl_profiles = [(profiles_and_runs[n], daystr+profiles_and_runs[n+1], daystr+profiles_and_runs[n+2]) for n in fl_profiles_i]
     fl_runs = [(profiles_and_runs[n], daystr+profiles_and_runs[n+1], daystr+profiles_and_runs[n+2]) for n in fl_runs_i]
-    return fl_profiles+fl_runs
+    res = fl_profiles+fl_runs
+    if timesorted:
+        from operator import itemgetter
+        return sorted(res, key=itemgetter(2))
+    else:
+        return res
