@@ -27,6 +27,5 @@ opts = dict(name=NAME,
             requires=REQUIRES,
             )
 
-
 if __name__ == '__main__':
     setup(**opts)

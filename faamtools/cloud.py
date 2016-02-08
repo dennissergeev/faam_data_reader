@@ -35,16 +35,16 @@ def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2date
 
     import h5py
 
-    ds2 = h5py.File(fname)
-    time = [ds2[i] for i in ds2.keys() if 'time' in i.lower()][0]
-    if time2datetime:
-        time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
-    else:
-        time = time.value
+    with h5py.File(fname) as ds2:
+        time = [ds2[i] for i in ds2.keys() if 'time' in i.lower()][0]
+        if time2datetime:
+            time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
+        else:
+            time = time.value
 
-    fwc = np.nansum([ds2[i] for i in ds2.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
-    lwc = np.nansum([ds2[i] for i in ds2.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
-    other = fwc = np.nansum([ds2[i] for i in ds2.keys() if 'S_MD' in i][0].value,1)  # small particles density
+        fwc = np.nansum([ds2[i] for i in ds2.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
+        lwc = np.nansum([ds2[i] for i in ds2.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
+        other = fwc = np.nansum([ds2[i] for i in ds2.keys() if 'S_MD' in i][0].value,1)  # small particles density
 
     fwc, lwc, other = [i*1e-3 for i in (fwc, lwc, other)] # Convert to kg m-3
 

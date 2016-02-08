@@ -52,19 +52,19 @@ def read_core_nc(fname, flds=None, time2datetime=False, calc_wspd=True, calc_wdi
                     u='U_NOTURB',v='V_NOTURB',\
                     pres='PS_RVSM',temp='TAT_DI_R')
 
-    f = nc.Dataset(fname)
+    with nc.Dataset(fname) as f:
 
-    data = ObsData()
-    for i in flds:
-        ncfld = f.variables[flds[i]]
-        ncdata = ncfld[:]
-        try:
-            ncflag = f.variables[flds[i]+'_FLAG']
-            ncdata[ncflag[:]!=0] = float('nan')
-        except KeyError:
-            pass
+        data = ObsData()
+        for i in flds:
+            ncfld = f.variables[flds[i]]
+            ncdata = ncfld[:]
+            try:
+                ncflag = f.variables[flds[i]+'_FLAG']
+                ncdata[ncflag[:]!=0] = float('nan')
+            except KeyError:
+                pass
 
-        data(**{i:FaamFld(val=ncdata[:].squeeze(),units=ncfld.units,long_name=ncfld.long_name)})
+            data(**{i:FaamFld(val=ncdata[:].squeeze(),units=ncfld.units,long_name=ncfld.long_name)})
 
     if hasattr(data,'u') and hasattr(data,'v'):
         if calc_wspd:
@@ -111,7 +111,8 @@ def parse_profiles_runs_info(text_file_name, daystr='', timesorted=True):
            131540
            131654
     """
-    profiles_and_runs = [i.rstrip('\n').lower() for i in open(text_file_name).readlines()]
+    with open(text_file_name) as f:
+        profiles_and_runs = [i.rstrip('\n').lower() for i in f.readlines()]
     fl_profiles_i = [n for n, l in enumerate(profiles_and_runs) if l.startswith('profile')]
     fl_runs_i = [n for n, l in enumerate(profiles_and_runs) if l.startswith('run')]
     fl_profiles = [(profiles_and_runs[n], daystr+profiles_and_runs[n+1], daystr+profiles_and_runs[n+2]) for n in fl_profiles_i]

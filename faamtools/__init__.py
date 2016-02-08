@@ -1,10 +1,6 @@
 from .version import __version__
 
-__all__ = ['ObsData',
-           'DsFld',
-           'FaamFld'
-          ]
-
+__all__ = ['ObsData', 'DsFld', 'FaamFld']
 
 class ObsData:
     """Generic class for storing several fields of observational data.
