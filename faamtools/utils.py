@@ -20,7 +20,7 @@ def timestr2datetime(tref, fmt='%Y-%m-%d%H:%M:%S'):
     else:
         date_and_time = spl[-2] + spl[-1]
     dt = datetime.datetime.strptime(date_and_time, fmt)
-    
+
     if   spl[0].lower() == 'days':
         nsec = 86400
     elif spl[0].lower() == 'hours':
@@ -31,9 +31,9 @@ def timestr2datetime(tref, fmt='%Y-%m-%d%H:%M:%S'):
         nsec = 1
     else:
         nsec = 0
-        print "Warning: unrecognized time unit, returned 0 for timestep"
-        
-    return dt, nsec 
+        print('Warning: unrecognized time unit, returned 0 for timestep')
+
+    return dt, nsec
 
 
 def filt_miss_row(*argin, **kwargs):
@@ -46,12 +46,12 @@ def filt_miss_row(*argin, **kwargs):
     Otherwise, NaNs are filtered out.
     """
     nargs = len(argin)
-    
+
     if nargs > 0:
-        
+
         args = [x.flat[:] for x in argin]
         n = args[0].size
-        
+
         if not all(x.size == n for x in args):
             raise NameError('Vectors must the same length')
 

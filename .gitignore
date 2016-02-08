@@ -1,3 +1,7 @@
 *.pyc
+.ipynb_checkpoints
 *~
-.ipynb*
+_build
+build
+dist
+*egg*
