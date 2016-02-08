@@ -31,8 +31,8 @@ long_description = """
 
 faamtools
 ========
-Reads and does some processing of instrumental aircraft measurements from UK's Facility for Airborne
-Atmospheric Measurements (FAAM)
+Read and process instrumental aircraft observations collected by
+UK's Facility for Airborne Atmospheric Measurements (FAAM)
 
 * core processed data
 * AVAPS dropsonde data
