@@ -9,10 +9,13 @@ import numpy as np
 from . import utils
 
 
-def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
-    """Read 2DS data from a HDF5 file. Requires `h5py` package.
+def read_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
+    """
+    Read cloud particle data from HDF5 file. Requires `h5py` package.
 
     Sum data from all channels and convert densities to [kg m :sup:`-3`].
+
+    Instruments: 2DS, CIP
 
     Args:
     -----
@@ -29,26 +32,26 @@ def read_2ds_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2date
         time: array-like of observations time
         fwc: frozen water content density [kg m :sup:`-3`]
         lwc: liquid water content density [kg m :sup:`-3`]
-        other: small particles density [kg m :sup:`-3`]
+        small: small particles density [kg m :sup:`-3`]
 
     """
 
     import h5py
 
-    with h5py.File(fname) as ds2:
-        time = [ds2[i] for i in ds2.keys() if 'time' in i.lower()][0]
+    with h5py.File(fname) as dataset:
+        time = [dataset[i] for i in dataset.keys() if 'time' in i.lower()][0]
         if time2datetime:
             time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
         else:
             time = time.value
 
-        fwc = np.nansum([ds2[i] for i in ds2.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
-        lwc = np.nansum([ds2[i] for i in ds2.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
-        other = fwc = np.nansum([ds2[i] for i in ds2.keys() if 'S_MD' in i][0].value,1)  # small particles density
+        fwc = np.nansum([dataset[i] for i in dataset.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
+        lwc = np.nansum([dataset[i] for i in dataset.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
+        small = np.nansum([dataset[i] for i in dataset.keys() if 'S_MD' in i][0].value,1)  # small particles density
 
-    fwc, lwc, other = [i*1e-3 for i in (fwc, lwc, other)] # Convert to kg m-3
+    fwc, lwc, small = [i*1e-3 for i in (fwc, lwc, small)] # Convert to kg m-3
 
-    return time, fwc, lwc, other
+    return time, fwc, lwc, small
 
 
 def read_cdp_nc(fname, time2datetime=True):
