@@ -1,15 +1,61 @@
 # -*- coding: utf-8 -*-
 """
-Functions to read data from 2DS and CDP cloud probes
+Functions to read data from 2DS, CIP, CDP, Nevzorov cloud probes
 """
 import datetime
 import netCDF4 as nc
 import numpy as np
+import warnings
 
 from . import utils
 
+def read_nevzorov_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
+    """
+    Read data from Nevzorov probe stored in NetCDF file.
 
-def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
+    Example: read_nevzorov_nc('b763_nevzorov_20130326_1hz_r1.nc',
+                               tbase=datetime.datetime(2013,3,26), tstep_sec=1)
+
+    Args:
+    -----
+        fname: str, file name
+    Kwargs:
+    -------
+        tbase: datetime.datetime, time start. If None, will be extracted from time units
+        tstep_sec: numeric, time frequency in seconds. If None, will be extracted from time units
+        time2datetime: boolean, optional.
+                       If True, convert time array to `datetime.datetime` objects.
+                       Defaults to True.
+    Returns:
+    --------
+        probe_time: array-like of observations time
+        twc_liq: array-like of condensed water content from TWC sensor, [kg m :sup:`-3`]
+        twc_ice: array-like of condensed water content from TWC sensor, [kg m :sup:`-3`]
+        lwc_liq: array-like of condensed water content from LWC sensor, [kg m :sup:`-3`]
+        lwc_ice: array-like of condensed water content from LWC sensor, [kg m :sup:`-3`]
+    """
+    with nc.Dataset(fname) as dataset:
+        probe_time = dataset['TIME']
+        probe_time_val = probe_time[:]
+        if time2datetime:
+            if tbase is None and tstep_sec is None:
+                if hasattr(probe_time, 'units'):
+                    try:
+                        tbase, tstep_sec = utils.timestr2datetime(probe_time.units)
+                    except ValueError:
+                        warnings.warn('Unable to parse time units correctly, return the original time values')
+                        pass
+            probe_time_val = np.array([tbase + datetime.timedelta(seconds=int(x)*tstep_sec) for x in probe_time_val])
+
+        twc_liq = dataset['TWC_Q_liq'][:]
+        twc_ice = dataset['TWC_Q_ice'][:]
+        lwc_liq = dataset['LWC_Q_liq'][:]
+        lwc_ice = dataset['LWC_Q_ice'][:]
+
+    return probe_time_val, twc_liq, twc_ice, lwc_liq, lwc_ice
+
+
+def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=True):
     """
     Read cloud particle data from HDF5 file. Requires `h5py` package.
     Sum mass concentration data over all channels and convert to [kg m :sup:`-3`].
@@ -52,11 +98,11 @@ def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2da
     import h5py
 
     with h5py.File(fname) as dataset:
-        time = dataset['Time_edge']
+        probe_time = dataset['Time_edge']
         if time2datetime:
-            time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
+            probe_time = np.array([tbase + datetime.timedelta(seconds=i) for i in probe_time.value])
         else:
-            time = time.value
+            probe_time = probe_time.value
 
         li_mc = np.nansum(dataset['PSD_Mass_LI'].value,1) # Low irregular
         mi_mc = np.nansum(dataset['PSD_Mass_MI'].value,1) # Medium irregular
@@ -68,33 +114,37 @@ def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2da
     return time, li_mc, mi_mc, hi_mc, e_mc
 
 
-def read_cdp_nc(fname, time2datetime=True):
+def read_cdp_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
     """
-    Read core FAAM **cloud** data from a NetCDF file.
+    Read CDP data from a NetCDF file.
 
     Args:
     -----
         fname: str, file name
     Kwargs:
     -------
+        tbase: datetime.datetime, time start. If None, will be extracted from time units
+        tstep_sec: numeric, time frequency in seconds. If None, will be extracted from time units
         time2datetime: boolean, optional.
                        If True, convert time array to `datetime.datetime` objects.
                        Defaults to True.
     Returns:
     --------
+        probe_time_val: array-like of observations time
         cdp_lwc_dens: liquid water content density [kg m :sup:`-3`]
-        cdp_time: array-like of observations time
-
     """
     with nc.Dataset(fname) as cdp:
-        cdp_time = cdp['Time']
+        probe_time = cdp['Time']
+        probe_time_val = probe_time[:]
         if time2datetime:
-            if hasattr(cdp_time, 'units'):
-                tbase, tstep_sec = utils.timestr2datetime(cdp_time.units)
-                arr_sec2datetime = np.vectorize(lambda x: tbase + datetime.timedelta(seconds=int(x)*tstep_sec))
-                cdp_time = arr_sec2datetime(cdp_time[:])
-        else:
-            cdp_time = cdp_time[:]
+            if tbase is None and tstep_sec is None:
+                if hasattr(probe_time, 'units'):
+                    try:
+                        tbase, tstep_sec = utils.timestr2datetime(probe_time.units)
+                    except ValueError:
+                        warnings.warn('Unable to parse time units correctly, return the original time values')
+                        pass
+            probe_time_val = np.array([tbase + datetime.timedelta(seconds=int(x)*tstep_sec) for x in probe_time_val])
 
         ch_lims = np.vstack((cdp['CDP_D_L_NOM'][:], cdp['CDP_D_U_NOM'][:])) # Particle diameter lower and upper limits for each channel
         ch_mean_diam = np.mean(ch_lims,0) # Mean diameter for each channel
@@ -118,4 +168,4 @@ def read_cdp_nc(fname, time2datetime=True):
             cdp_lwc_dens_all_ch.append(cdp_lwc_g_per_m3*1e-3) # Append array of droplet densities in (kg m-3)
         cdp_lwc_dens = sum(np.array(cdp_lwc_dens_all_ch))
 
-    return cdp_lwc_dens, cdp_time
+    return probe_time_val, cdp_lwc_dens
