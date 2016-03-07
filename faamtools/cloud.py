@@ -9,13 +9,26 @@ import numpy as np
 from . import utils
 
 
-def read_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
+def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime=True):
     """
     Read cloud particle data from HDF5 file. Requires `h5py` package.
-
-    Sum data from all channels and convert densities to [kg m :sup:`-3`].
+    Sum mass concentration data over all channels and convert to [kg m :sup:`-3`].
 
     Instruments: 2DS, CIP
+
+    Input file has usuallly name ending in '_v1.h5' and contains cloud particle data categorised as following:
+
+    S - Small - All particles too small to be further categorised. (2DS cut-off = 50, all other cut-off = 30)
+    LI - Low Irregular - All particles larger than the small cut off with Sphericity between 0.9 and 1.2
+    MI - Med Irregular - All particles larger than the small cut off with Sphericity between 1.2 and 1.4
+    HI - High Irregular - All particles larger than the small cut off with Sphericity greater than 1.4
+    E - Edge - All particles that touch the edge of the array cannot be accurately categorised at present
+
+    Units:
+    Time - seconds from midnight
+    Size - micrometres
+    Number concentration - #/litre
+    Mass concentration - g/m3
 
     Args:
     -----
@@ -30,28 +43,29 @@ def read_hdf(fname, tbase=datetime.datetime(2013, 3, 26, 0, 0, 0), time2datetime
     Returns:
     --------
         time: array-like of observations time
-        fwc: frozen water content density [kg m :sup:`-3`]
-        lwc: liquid water content density [kg m :sup:`-3`]
-        small: small particles density [kg m :sup:`-3`]
-
+        li_mc: array-like, mass concentration of LI [kg m :sup:`-3`]
+        mi_mc: array-like, mass concentration of MI [kg m :sup:`-3`]
+        hi_mc: array-like, mass concentration of HI [kg m :sup:`-3`]
+        e_mc: array-like, mass concentration of Edge [kg m :sup:`-3`]
     """
 
     import h5py
 
     with h5py.File(fname) as dataset:
-        time = [dataset[i] for i in dataset.keys() if 'time' in i.lower()][0]
+        time = dataset['Time_edge']
         if time2datetime:
             time = np.array([tbase + datetime.timedelta(seconds=i) for i in time.value])
         else:
             time = time.value
 
-        fwc = np.nansum([dataset[i] for i in dataset.keys() if 'I_MD' in i][0].value,1) # Frozen water content density
-        lwc = np.nansum([dataset[i] for i in dataset.keys() if 'R_MD' in i][0].value,1) # Liquid water content density
-        small = np.nansum([dataset[i] for i in dataset.keys() if 'S_MD' in i][0].value,1)  # small particles density
+        li_mc = np.nansum(dataset['PSD_Mass_LI'].value,1) # Low irregular
+        mi_mc = np.nansum(dataset['PSD_Mass_MI'].value,1) # Medium irregular
+        hi_mc = np.nansum(dataset['PSD_Mass_HI'].value,1) # Hight irregular
+        e_mc = np.nansum(dataset['PSD_Mass_E'].value,1) # Edge
 
-    fwc, lwc, small = [i*1e-3 for i in (fwc, lwc, small)] # Convert to kg m-3
+    li_mc, mi_mc, hi_mc, e_mc = [i*1e-3 for i in (li_mc, mi_mc, hi_mc, e_mc)] # Convert to kg m-3
 
-    return time, fwc, lwc, small
+    return time, li_mc, mi_mc, hi_mc, e_mc
 
 
 def read_cdp_nc(fname, time2datetime=True):
