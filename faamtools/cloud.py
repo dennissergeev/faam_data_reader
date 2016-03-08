@@ -9,7 +9,7 @@ import warnings
 
 from . import utils
 
-def read_nevzorov_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
+def read_nevzorov_nc(fname, tbase=None, tstep_sec=None, time2datetime=True, interpnan=True):
     """
     Read data from Nevzorov probe stored in NetCDF file.
 
@@ -52,10 +52,13 @@ def read_nevzorov_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
         lwc_liq = dataset['LWC_Q_liq'][:]*1e-3 # to kg m-3
         lwc_ice = dataset['LWC_Q_ice'][:]*1e-3 # to kg m-3
 
+    if interpnan:
+        twc_liq, twc_ice, lwc_liq, lwc_ice = [utils.interp_nan(i) for i in (twc_liq, twc_ice, lwc_liq, lwc_ice)]
+
     return probe_time_val, twc_liq, twc_ice, lwc_liq, lwc_ice
 
 
-def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=True):
+def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=True, interpnan=True):
     """
     Read cloud particle data from HDF5 file. Requires `h5py` package.
     Sum mass concentration data over all channels and convert to [kg m :sup:`-3`].
@@ -110,11 +113,13 @@ def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=Tr
         e_mc = np.nansum(dataset['PSD_Mass_E'].value,1) # Edge
 
     li_mc, mi_mc, hi_mc, e_mc = [i*1e-3 for i in (li_mc, mi_mc, hi_mc, e_mc)] # Convert to kg m-3
+    if interpnan:
+        li_mc, mi_mc, hi_mc, e_mc = [utils.interp_nan(i) for i in (li_mc, mi_mc, hi_mc, e_mc)]
 
     return probe_time, li_mc, mi_mc, hi_mc, e_mc
 
 
-def read_cdp_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
+def read_cdp_nc(fname, tbase=None, tstep_sec=None, time2datetime=True, interpnan=True):
     """
     Read CDP data from a NetCDF file.
 
@@ -167,5 +172,7 @@ def read_cdp_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
             cdp_lwc_g_per_m3 = cdp_conc*mass*(1e2)**3
             cdp_lwc_dens_all_ch.append(cdp_lwc_g_per_m3*1e-3) # Append array of droplet densities in (kg m-3)
         cdp_lwc_dens = sum(np.array(cdp_lwc_dens_all_ch))
+    if interpnan:
+        cdp_lwc_dens = utils.interp_nan(cdp_lwc_dens)
 
     return probe_time_val, cdp_lwc_dens

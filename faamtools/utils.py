@@ -2,6 +2,14 @@
 import datetime
 import numpy as np
 
+def interp_nan(x_in):
+    x = x_in.copy()
+    nans = np.isnan(x)
+    indices = lambda z: z.nonzero()[0]
+    x[nans] = np.interp(indices(nans), indices(~nans), x[~nans])
+    return x
+
+
 def uv2wdir(u, v):
     return 180.+180./np.pi*np.arctan2(u, v)
 
