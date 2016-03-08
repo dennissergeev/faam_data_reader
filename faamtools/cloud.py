@@ -111,7 +111,7 @@ def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=Tr
 
     li_mc, mi_mc, hi_mc, e_mc = [i*1e-3 for i in (li_mc, mi_mc, hi_mc, e_mc)] # Convert to kg m-3
 
-    return time, li_mc, mi_mc, hi_mc, e_mc
+    return probe_time, li_mc, mi_mc, hi_mc, e_mc
 
 
 def read_cdp_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
