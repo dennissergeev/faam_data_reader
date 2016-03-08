@@ -47,10 +47,10 @@ def read_nevzorov_nc(fname, tbase=None, tstep_sec=None, time2datetime=True):
                         pass
             probe_time_val = np.array([tbase + datetime.timedelta(seconds=int(x)*tstep_sec) for x in probe_time_val])
 
-        twc_liq = dataset['TWC_Q_liq'][:]
-        twc_ice = dataset['TWC_Q_ice'][:]
-        lwc_liq = dataset['LWC_Q_liq'][:]
-        lwc_ice = dataset['LWC_Q_ice'][:]
+        twc_liq = dataset['TWC_Q_liq'][:]*1e-3 # to kg m-3
+        twc_ice = dataset['TWC_Q_ice'][:]*1e-3 # to kg m-3
+        lwc_liq = dataset['LWC_Q_liq'][:]*1e-3 # to kg m-3
+        lwc_ice = dataset['LWC_Q_ice'][:]*1e-3 # to kg m-3
 
     return probe_time_val, twc_liq, twc_ice, lwc_liq, lwc_ice
 
@@ -98,7 +98,7 @@ def read_cloud_hdf(fname, tbase=datetime.datetime(2013, 3, 26), time2datetime=Tr
     import h5py
 
     with h5py.File(fname) as dataset:
-        probe_time = dataset['Time_edge']
+        probe_time = dataset['Time_mid']
         if time2datetime:
             probe_time = np.array([tbase + datetime.timedelta(seconds=i) for i in probe_time.value])
         else:
